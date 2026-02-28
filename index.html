@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIY Digital Dreams — AI Security & Red Team Research</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ground: #100808;
+    --low-sky: #0d2a3a;
+    --mid-sky: #0e5a8a;
+    --high-sky: #1a90c0;
+    --stratosphere: #080d2e;
+    --cloud-white: rgba(255,255,255,0.92);
+    --gold: #f5a623;
+    --pale-gold: #ffd89b;
+    --teal: #00c8b0;
+    --mist: rgba(180,240,255,0.12);
+    --text-light: rgba(255,255,255,0.95);
+    --text-dim: rgba(210,235,255,0.7);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Cormorant Garamond', serif;
+    background: var(--ground);
+    color: var(--text-light);
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ── FIXED SKY CANVAS ── */
+  #sky-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem;
+  }
+
+  .section-inner {
+    max-width: 900px;
+    width: 100%;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 1.5rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+    backdrop-filter: blur(2px);
+  }
+
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    text-shadow: 0 0 30px rgba(240,192,96,0.5);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.3s;
+  }
+
+  .nav-links a:hover { color: var(--gold); }
+
+  /* ── ALTITUDE INDICATOR ── */
+  #altitude {
+    position: fixed;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .alt-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    opacity: 0.6;
+  }
+
+  .alt-dots {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .alt-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.3);
+    transition: all 0.4s;
+    cursor: pointer;
+  }
+
+  .alt-dot.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    box-shadow: 0 0 10px var(--gold);
+  }
+
+  /* ── HERO / GROUND ── */
+  #hero {
+    min-height: 100vh;
+    align-items: flex-end;
+    padding-bottom: 10vh;
+  }
+
+  .hero-content {
+    max-width: 900px;
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.3s forwards;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 10vw, 9rem);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.6s forwards;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--gold);
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 0.65em;
+    display: block;
+  }
+
+  .hero-sub {
+    font-size: 1.2rem;
+    font-weight: 300;
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-width: 520px;
+    margin-bottom: 3rem;
+    opacity: 0;
+    animation: fadeUp 1s ease 0.9s forwards;
+  }
+
+  .scroll-cue {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    opacity: 0;
+    animation: fadeUp 1s ease 1.2s forwards;
+  }
+
+  .scroll-arrow {
+    display: inline-block;
+    animation: bounce 2s infinite;
+  }
+
+  /* ── SECTION HEADINGS ── */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    opacity: 0.8;
+  }
+
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 7vw, 6rem);
+    letter-spacing: 0.03em;
+    line-height: 0.95;
+    margin-bottom: 2rem;
+  }
+
+  h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.75rem;
+    color: var(--pale-gold);
+  }
+
+  p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── SERVICES GRID ── */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5px;
+    margin-top: 3rem;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .service-card {
+    padding: 2.5rem 2rem;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.3s, transform 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .service-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+
+  .service-card:hover::before { transform: translateX(0); }
+  .service-card:hover { background: rgba(240,192,96,0.05); }
+
+  .service-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    opacity: 0.7;
+  }
+
+  /* ── BOOTCAMP ── */
+  .bootcamp-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+
+  @media (max-width: 700px) { .bootcamp-layout { grid-template-columns: 1fr; gap: 3rem; } }
+
+  .curriculum-list {
+    list-style: none;
+    counter-reset: curriculum;
+  }
+
+  .curriculum-list li {
+    counter-increment: curriculum;
+    padding: 1.2rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    font-size: 1rem;
+    color: var(--text-dim);
+    transition: color 0.3s;
+  }
+
+  .curriculum-list li:hover { color: var(--text-light); }
+
+  .curriculum-list li::before {
+    content: counter(curriculum, decimal-leading-zero);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--gold);
+    opacity: 0.7;
+    flex-shrink: 0;
+    padding-top: 0.2rem;
+  }
+
+  .stat-block {
+    text-align: center;
+    padding: 2rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.2);
+    backdrop-filter: blur(8px);
+  }
+
+  .stat-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    color: var(--gold);
+    line-height: 1;
+    display: block;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  /* ── TOOL ── */
+  .tool-showcase {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  @media (max-width: 700px) { .tool-showcase { grid-template-columns: 1fr; } }
+
+  .rating-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .rating-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+
+  .rating-pip {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .rating-fill {
+    height: 3px;
+    background: rgba(255,255,255,0.1);
+    flex: 1;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .rating-fill-inner {
+    height: 100%;
+    border-radius: 2px;
+    transform-origin: left;
+    animation: grow 1.5s ease forwards;
+  }
+
+  .rating-label { color: var(--text-dim); min-width: 90px; }
+
+  .tool-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding: 1rem 2rem;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    text-decoration: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gold);
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+    z-index: -1;
+  }
+
+  .tool-link:hover { color: var(--ground); }
+  .tool-link:hover::before { transform: translateX(0); }
+
+  /* ── ABOUT ── */
+  .about-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 700px) { .about-layout { grid-template-columns: 1fr; gap: 3rem; } }
+
+  .credential-list {
+    list-style: none;
+    margin-top: 1rem;
+  }
+
+  .credential-list li {
+    padding: 0.9rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: color 0.3s;
+  }
+
+  .credential-list li:hover { color: var(--text-light); }
+
+  .credential-list li::before {
+    content: '—';
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    opacity: 0.7;
+  }
+
+  /* ── CONTACT ── */
+  #contact {
+    min-height: 100vh;
+  }
+
+  .contact-inner {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .contact-inner h2 {
+    font-size: clamp(3.5rem, 8vw, 7rem);
+  }
+
+  .contact-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .contact-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.2);
+    backdrop-filter: blur(10px);
+    text-decoration: none;
+    color: var(--text-light);
+    font-size: 1rem;
+    transition: all 0.3s;
+    group: hover;
+  }
+
+  .contact-link:hover {
+    border-color: var(--gold);
+    background: rgba(240,192,96,0.05);
+  }
+
+  .contact-link-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .contact-link-value {
+    font-size: 1rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .contact-link-arrow {
+    color: var(--gold);
+    font-size: 1.2rem;
+    transition: transform 0.3s;
+  }
+
+  .contact-link:hover .contact-link-arrow { transform: translateX(6px); }
+
+  footer {
+    text-align: center;
+    padding: 3rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.2);
+    border-top: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    33% { transform: translateY(-12px) translateX(5px); }
+    66% { transform: translateY(6px) translateX(-5px); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.15s; }
+  .reveal-delay-2 { transition-delay: 0.3s; }
+  .reveal-delay-3 { transition-delay: 0.45s; }
+  .reveal-delay-4 { transition-delay: 0.6s; }
+</style>
+</head>
+<body>
+
+<!-- SKY CANVAS -->
+<canvas id="sky-canvas"></canvas>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">DIY Digital Dreams</div>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#bootcamp">Bootcamp</a></li>
+    <li><a href="#tools">Tools</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- ALTITUDE INDICATOR -->
+<div id="altitude">
+  <div class="alt-dots">
+    <div class="alt-dot active" data-section="hero"></div>
+    <div class="alt-dot" data-section="services"></div>
+    <div class="alt-dot" data-section="bootcamp"></div>
+    <div class="alt-dot" data-section="tools"></div>
+    <div class="alt-dot" data-section="about"></div>
+    <div class="alt-dot" data-section="contact"></div>
+  </div>
+  <div class="alt-label">Altitude</div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-content">
+    <div class="eyebrow">Puerto Rico · AI Security Research · Red Team Operations</div>
+    <h1>
+      DIY<br>Digital
+      <em>Dreams</em>
+    </h1>
+    <p class="hero-sub">We break AI systems so you don't have to learn that lesson the hard way. Authorized red team research, workforce development, and security tooling from Puerto Rico.</p>
+    <div class="scroll-cue">
+      <span class="scroll-arrow">↑</span>
+      <span>Scroll to ascend</span>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">What we do</div>
+      <h2>Red Team<br>Operations</h2>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <p>We conduct authorized adversarial testing against AI systems — finding the vulnerabilities before the adversaries do. Our work spans competition-grade attack development, enterprise security assessments, and applied research in prompt injection and model exploitation.</p>
+    </div>
+    <div class="services-grid reveal reveal-delay-2">
+      <div class="service-card">
+        <div class="service-number">01</div>
+        <h3>Prompt Injection Testing</h3>
+        <p>Direct and indirect injection attack development. We map defense layers, identify bypass vectors, and document success rates across frontier models.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-number">02</div>
+        <h3>AI Arena Competition</h3>
+        <p>Active participation in Gray Swan AI Arena and CTF-style security challenges. Competition-tested methodology, not theoretical frameworks.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-number">03</div>
+        <h3>Security Tooling</h3>
+        <p>Custom tools for payload analysis, defense layer mapping, and red team workflow automation. Built for researchers, by researchers.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-number">04</div>
+        <h3>Vulnerability Research</h3>
+        <p>Systematic study of attack patterns including indirect injection, task delegation exploitation, and multi-layer bypass techniques.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BOOTCAMP -->
+<section id="bootcamp">
+  <div class="section-inner">
+    <div class="bootcamp-layout">
+      <div>
+        <div class="reveal">
+          <div class="section-label">Workforce Development</div>
+          <h2>AI Red Team<br>Bootcamp</h2>
+        </div>
+        <div class="reveal reveal-delay-1">
+          <p>Puerto Rico is home to thousands of skilled educators displaced by AI disruption. We're turning that into an opportunity — training teachers to become AI security specialists through a rigorous, competition-grounded curriculum.</p>
+          <p>Every concept maps to a real challenge. Every technique comes from documented research. No fluff.</p>
+        </div>
+        <ul class="curriculum-list reveal reveal-delay-2">
+          <li>Introduction to AI Security & Threat Modeling</li>
+          <li>Direct vs Indirect Prompt Injection</li>
+          <li>Attack Pattern Library & Named Techniques</li>
+          <li>Hands-On Competition Practice</li>
+          <li>Defense Layer Analysis & Mapping</li>
+          <li>Ethical Considerations & Responsible Disclosure</li>
+        </ul>
+      </div>
+      <div class="reveal reveal-delay-2">
+        <div style="display:flex; flex-direction:column; gap:1rem;">
+          <div class="stat-block">
+            <span class="stat-number">PR</span>
+            <div class="stat-label">Based in Puerto Rico</div>
+          </div>
+          <div class="stat-block">
+            <span class="stat-number">6</span>
+            <div class="stat-label">Module Curriculum</div>
+          </div>
+          <div class="stat-block">
+            <span class="stat-number">Real</span>
+            <div class="stat-label">Competition-Grounded Training</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section id="tools">
+  <div class="section-inner">
+    <div class="tool-showcase">
+      <div>
+        <div class="reveal">
+          <div class="section-label">Open Research Tool</div>
+          <h2>Prompt-O-<br>Matic</h2>
+        </div>
+        <div class="reveal reveal-delay-1">
+          <p>A Claude-powered payload analysis engine for AI security researchers. Submit your injection attempts and get systematic defense layer analysis, weakness identification, and improved variants.</p>
+          <p>Built from competition intelligence. Deployed free for the research community.</p>
+        </div>
+        <a href="https://promptomatic.netlify.app/" target="_blank" class="tool-link reveal reveal-delay-2">
+          Launch Tool →
+        </a>
+      </div>
+      <div class="reveal reveal-delay-1">
+        <div style="padding: 2rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(12px);">
+          <div style="font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 1.5rem; opacity: 0.8;">THREAT RATING SCALE</div>
+          <div class="rating-bar">
+            <div class="rating-row">
+              <div class="rating-pip" style="background:#4ade80;"></div>
+              <div class="rating-label">GREEN</div>
+              <div class="rating-fill"><div class="rating-fill-inner" style="width:15%; background:#4ade80; animation-delay:0.2s;"></div></div>
+            </div>
+            <div class="rating-row">
+              <div class="rating-pip" style="background:#facc15;"></div>
+              <div class="rating-label">YELLOW</div>
+              <div class="rating-fill"><div class="rating-fill-inner" style="width:30%; background:#facc15; animation-delay:0.4s;"></div></div>
+            </div>
+            <div class="rating-row">
+              <div class="rating-pip" style="background:#fb923c;"></div>
+              <div class="rating-label">ORANGE</div>
+              <div class="rating-fill"><div class="rating-fill-inner" style="width:50%; background:#fb923c; animation-delay:0.6s;"></div></div>
+            </div>
+            <div class="rating-row">
+              <div class="rating-pip" style="background:#f87171;"></div>
+              <div class="rating-label">RED</div>
+              <div class="rating-fill"><div class="rating-fill-inner" style="width:68%; background:#f87171; animation-delay:0.8s;"></div></div>
+            </div>
+            <div class="rating-row">
+              <div class="rating-pip" style="background:#a3a3a3;"></div>
+              <div class="rating-label">BLACK</div>
+              <div class="rating-fill"><div class="rating-fill-inner" style="width:84%; background:#a3a3a3; animation-delay:1.0s;"></div></div>
+            </div>
+            <div class="rating-row">
+              <div class="rating-pip" style="background: radial-gradient(circle, #fff, #a855f7);"></div>
+              <div class="rating-label">ULTRABLACK</div>
+              <div class="rating-fill"><div class="rating-fill-inner" style="width:100%; background: linear-gradient(to right, #a855f7, #fff); animation-delay:1.2s;"></div></div>
+            </div>
+          </div>
+          <div style="margin-top: 1.5rem; font-family: 'DM Mono', monospace; font-size: 0.6rem; color: rgba(255,255,255,0.3); letter-spacing: 0.1em;">
+            ULTRABLACK = Novel vector, publishable finding
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-inner">
+    <div class="about-layout">
+      <div>
+        <div class="reveal">
+          <div class="section-label">About the firm</div>
+          <h2>Built on<br>Real Attacks</h2>
+        </div>
+        <div class="reveal reveal-delay-1">
+          <p>DIY Digital Dreams is an AI security research firm based in Puerto Rico. We specialize in adversarial AI testing — the kind that comes from actually breaking systems in authorized environments, not from reading about it.</p>
+          <p>Our work is grounded in active competition participation, documented attack research, and a commitment to building the next generation of AI security talent in underserved communities.</p>
+        </div>
+      </div>
+      <div class="reveal reveal-delay-2">
+        <h3 style="margin-bottom:1rem;">Research Credentials</h3>
+        <ul class="credential-list">
+          <li>Gray Swan AI Arena — active competitor</li>
+          <li>Terminal: Operation Parallax — Level 4</li>
+          <li>Indirect prompt injection specialist</li>
+          <li>Defense layer analysis methodology</li>
+          <li>Named payload catalog (Self-Referential Auth, DRU Drift)</li>
+          <li>Competition intelligence from MATS x Trails</li>
+          <li>Anthropic partner ecosystem</li>
+          <li>Puerto Rico-based workforce development</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-inner">
+    <div class="reveal">
+      <div class="section-label">Above the clouds</div>
+      <h2>Let's<br>Talk</h2>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <p>Whether you need red team services, want to collaborate on research, or are interested in the bootcamp program — we're building something real here.</p>
+    </div>
+    <div class="contact-options reveal reveal-delay-2">
+      <a href="https://github.com/diydigitaldreams" target="_blank" class="contact-link">
+        <div>
+          <div class="contact-link-label">GitHub</div>
+          <div class="contact-link-value">diydigitaldreams</div>
+        </div>
+        <span class="contact-link-arrow">→</span>
+      </a>
+      <a href="https://promptomatic.netlify.app/" target="_blank" class="contact-link">
+        <div>
+          <div class="contact-link-label">Live Tool</div>
+          <div class="contact-link-value">promptomatic.netlify.app</div>
+        </div>
+        <span class="contact-link-arrow">→</span>
+      </a>
+      <a href="mailto:hello@diydigitaldreams.com" class="contact-link">
+        <div>
+          <div class="contact-link-label">Email</div>
+          <div class="contact-link-value">hello@diydigitaldreams.com</div>
+        </div>
+        <span class="contact-link-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  © 2026 DIY Digital Dreams · Puerto Rico · AI Security Research · All rights reserved
+</footer>
+
+<script>
+// ── SKY CANVAS ENGINE ──
+const canvas = document.getElementById('sky-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, scrollProgress = 0;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Cloud layers
+const clouds = [];
+function initClouds() {
+  clouds.length = 0;
+  const layers = [
+    { count: 6,  yRange: [0.55, 1.0], size: [180, 380], speed: 0.10, opacity: 0.88, layer: 0 },
+    { count: 8,  yRange: [0.25, 0.65],size: [120, 280], speed: 0.07, opacity: 0.72, layer: 1 },
+    { count: 10, yRange: [0.0, 0.35], size: [80, 200],  speed: 0.045,opacity: 0.55, layer: 2 },
+    { count: 6,  yRange: [-0.25,0.15],size: [50, 130],  speed: 0.025,opacity: 0.28, layer: 3 },
+  ];
+  layers.forEach(l => {
+    for (let i = 0; i < l.count; i++) {
+      clouds.push({
+        x: Math.random() * W * 1.4 - W * 0.2,
+        y: H * (l.yRange[0] + Math.random() * (l.yRange[1] - l.yRange[0])),
+        size: l.size[0] + Math.random() * (l.size[1] - l.size[0]),
+        speed: l.speed * (0.7 + Math.random() * 0.6),
+        opacity: l.opacity * (0.6 + Math.random() * 0.4),
+        layer: l.layer,
+        puffs: Math.floor(3 + Math.random() * 4),
+        drift: Math.random() * Math.PI * 2,
+      });
+    }
+  });
+}
+initClouds();
+window.addEventListener('resize', initClouds);
+
+function drawCloud(x, y, size, opacity, t) {
+  // Tropical cumulus - tall, dramatic, heavily layered
+  const puffPositions = [
+    {rx: 0,           ry: 0,           r: size * 0.55, tint: [255,255,255]},
+    {rx: size * 0.5,  ry: size * 0.08, r: size * 0.42, tint: [240,248,255]},
+    {rx: -size * 0.48,ry: size * 0.1,  r: size * 0.40, tint: [240,248,255]},
+    {rx: size * 0.22, ry: -size * 0.28,r: size * 0.36, tint: [255,255,255]},
+    {rx: -size * 0.18,ry: -size * 0.25,r: size * 0.32, tint: [255,255,255]},
+    {rx: size * 0.05, ry: -size * 0.48,r: size * 0.28, tint: [255,255,255]}, // towering top
+    {rx: size * 0.6,  ry: size * 0.2,  r: size * 0.28, tint: [220,235,255]}, // shadow edge
+    {rx: -size * 0.6, ry: size * 0.22, r: size * 0.26, tint: [220,235,255]},
+  ];
+  puffPositions.forEach(p => {
+    const grd = ctx.createRadialGradient(x + p.rx, y + p.ry, 0, x + p.rx, y + p.ry, p.r);
+    grd.addColorStop(0, `rgba(${p.tint[0]},${p.tint[1]},${p.tint[2]},${opacity})`);
+    grd.addColorStop(0.45, `rgba(${p.tint[0]-10},${p.tint[1]},${p.tint[2]},${opacity * 0.75})`);
+    grd.addColorStop(0.8, `rgba(200,220,240,${opacity * 0.3})`);
+    grd.addColorStop(1, `rgba(180,210,240,0)`);
+    ctx.beginPath();
+    ctx.ellipse(x + p.rx, y + p.ry, p.r * 1.5, p.r * 0.9, 0, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+  });
+  // Flat cloud base - tropical cumulonimbus characteristic
+  const baseGrd = ctx.createLinearGradient(x - size, y + size * 0.3, x + size, y + size * 0.3);
+  baseGrd.addColorStop(0, `rgba(180,200,230,0)`);
+  baseGrd.addColorStop(0.3, `rgba(160,185,220,${opacity * 0.25})`);
+  baseGrd.addColorStop(0.7, `rgba(160,185,220,${opacity * 0.25})`);
+  baseGrd.addColorStop(1, `rgba(180,200,230,0)`);
+  ctx.beginPath();
+  ctx.ellipse(x, y + size * 0.35, size * 1.2, size * 0.18, 0, 0, Math.PI * 2);
+  ctx.fillStyle = baseGrd;
+  ctx.fill();
+}
+
+function getSkyColor(progress) {
+  // Puerto Rico sky: golden hour → Caribbean turquoise → cobalt → magenta dusk → deep indigo night
+  const stops = [
+    { p: 0,   top: [18, 8, 5],      bot: [80, 40, 20] },      // ground: deep amber dark
+    { p: 0.1, top: [40, 60, 120],   bot: [220, 130, 60] },     // low: golden horizon, warm sky
+    { p: 0.25,top: [20, 130, 180],  bot: [255, 180, 80] },     // Caribbean blue meets gold
+    { p: 0.4, top: [10, 110, 170],  bot: [30, 160, 200] },     // vivid Caribbean turquoise
+    { p: 0.55,top: [8, 80, 160],    bot: [20, 140, 190] },     // deep cobalt blue
+    { p: 0.7, top: [60, 20, 80],    bot: [180, 60, 120] },     // magenta-purple dusk
+    { p: 0.85,top: [20, 8, 50],     bot: [60, 20, 90] },       // deep twilight purple
+    { p: 1.0, top: [5, 3, 25],      bot: [15, 8, 55] },        // near-space indigo
+  ];
+
+  let a = stops[0], b = stops[1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (progress >= stops[i].p && progress <= stops[i+1].p) {
+      a = stops[i]; b = stops[i+1];
+      break;
+    }
+  }
+  const t = (progress - a.p) / (b.p - a.p);
+  const lerp = (a, b) => Math.round(a + (b - a) * t);
+  return {
+    top: `rgb(${lerp(a.top[0],b.top[0])},${lerp(a.top[1],b.top[1])},${lerp(a.top[2],b.top[2])})`,
+    bot: `rgb(${lerp(a.bot[0],b.bot[0])},${lerp(a.bot[1],b.bot[1])},${lerp(a.bot[2],b.bot[2])})`
+  };
+}
+
+let t = 0;
+function render() {
+  t += 0.003;
+  ctx.clearRect(0, 0, W, H);
+
+  // Sky gradient
+  const { top, bot } = getSkyColor(scrollProgress);
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, top);
+  grad.addColorStop(1, bot);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars (visible when high up)
+  if (scrollProgress > 0.7) {
+    const starAlpha = (scrollProgress - 0.7) / 0.3;
+    ctx.fillStyle = `rgba(255,255,255,${starAlpha * 0.8})`;
+    for (let i = 0; i < 150; i++) {
+      const sx = ((i * 137.5) % 1) * W;
+      const sy = ((i * 91.3) % 1) * H * 0.7;
+      const ss = 0.5 + ((i * 47.2) % 1) * 1.5;
+      const twinkle = 0.5 + 0.5 * Math.sin(t * 3 + i);
+      ctx.globalAlpha = starAlpha * twinkle * 0.9;
+      ctx.beginPath();
+      ctx.arc(sx, sy, ss, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Tropical golden hour / sunset glow
+  if (scrollProgress < 0.35) {
+    const glowAlpha = (1 - scrollProgress / 0.35) * 0.55;
+    const horizonGrad = ctx.createLinearGradient(0, 0, 0, H);
+    horizonGrad.addColorStop(0, `rgba(255,160,60,0)`);
+    horizonGrad.addColorStop(0.4, `rgba(255,140,40,${glowAlpha * 0.5})`);
+    horizonGrad.addColorStop(0.75, `rgba(255,100,30,${glowAlpha})`);
+    horizonGrad.addColorStop(1, `rgba(80,20,5,${glowAlpha * 1.8})`);
+    ctx.fillStyle = horizonGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Caribbean teal water shimmer on horizon
+  if (scrollProgress < 0.3) {
+    const shimmerAlpha = (1 - scrollProgress / 0.3) * 0.3;
+    const tealGrad = ctx.createLinearGradient(0, H * 0.55, 0, H);
+    tealGrad.addColorStop(0, `rgba(0,180,160,0)`);
+    tealGrad.addColorStop(0.5, `rgba(0,200,180,${shimmerAlpha})`);
+    tealGrad.addColorStop(1, `rgba(0,120,100,${shimmerAlpha * 0.5})`);
+    ctx.fillStyle = tealGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Magenta-pink dusk layer (upper atmosphere)
+  if (scrollProgress > 0.6 && scrollProgress < 0.85) {
+    const duskProgress = scrollProgress < 0.725
+      ? (scrollProgress - 0.6) / 0.125
+      : 1 - (scrollProgress - 0.725) / 0.125;
+    const duskGrad = ctx.createLinearGradient(0, 0, 0, H);
+    duskGrad.addColorStop(0, `rgba(255,80,150,0)`);
+    duskGrad.addColorStop(0.3, `rgba(220,60,120,${duskProgress * 0.25})`);
+    duskGrad.addColorStop(0.7, `rgba(180,40,100,${duskProgress * 0.15})`);
+    duskGrad.addColorStop(1, `rgba(100,20,60,0)`);
+    ctx.fillStyle = duskGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Draw clouds sorted by layer
+  const sorted = [...clouds].sort((a, b) => b.layer - a.layer);
+  sorted.forEach(c => {
+    // Cloud parallax: each layer moves at different rate
+    const parallaxOffset = -(scrollProgress * H * 3) * (1 - c.layer * 0.25);
+    const drift = Math.sin(t * 0.5 + c.drift) * 8;
+    const cx = c.x + drift + t * c.speed * 60;
+    const cy = c.y + parallaxOffset + Math.cos(t * 0.3 + c.drift) * 4;
+
+    // Fade clouds based on scroll - near clouds fade out, far ones come in
+    let cloudOpacity = c.opacity;
+    if (scrollProgress > 0.8) {
+      cloudOpacity *= (1 - (scrollProgress - 0.8) / 0.2);
+    }
+
+    if (cloudOpacity > 0.01) {
+      drawCloud(cx % (W + c.size * 2) - c.size, cy, c.size, cloudOpacity, t);
+    }
+  });
+
+  // Tropical humidity haze at cloud level
+  if (scrollProgress > 0.15 && scrollProgress < 0.65) {
+    const hazeProgress = scrollProgress < 0.4
+      ? (scrollProgress - 0.15) / 0.25
+      : 1 - (scrollProgress - 0.4) / 0.25;
+    const hazeGrad = ctx.createLinearGradient(0, 0, 0, H);
+    hazeGrad.addColorStop(0, `rgba(180,240,255,0)`);
+    hazeGrad.addColorStop(0.25, `rgba(150,220,240,${hazeProgress * 0.1})`);
+    hazeGrad.addColorStop(0.6, `rgba(100,210,220,${hazeProgress * 0.16})`);
+    hazeGrad.addColorStop(1, `rgba(180,240,255,0)`);
+    ctx.fillStyle = hazeGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  requestAnimationFrame(render);
+}
+render();
+
+// ── SCROLL HANDLER ──
+function updateScroll() {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  scrollProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+
+  // Update altitude dots
+  const sections = ['hero','services','bootcamp','tools','about','contact'];
+  const dots = document.querySelectorAll('.alt-dot');
+  let activeIdx = 0;
+  sections.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= window.innerHeight * 0.5) activeIdx = i;
+    }
+  });
+  dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+}
+window.addEventListener('scroll', updateScroll, { passive: true });
+
+// ── REVEAL ON SCROLL ──
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('visible');
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── ALTITUDE DOT CLICK ──
+document.querySelectorAll('.alt-dot').forEach(dot => {
+  const id = dot.dataset.section;
+  dot.addEventListener('click', () => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+</body>
+</html>
