@@ -3,7 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="DIY Digital Dreams — AI security research and red team operations based in Puerto Rico. Authorized adversarial testing, prompt injection research, security tooling, and workforce development.">
+<meta name="theme-color" content="#100808">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="DIY Digital Dreams — AI Security & Red Team Research">
+<meta property="og:description" content="We break AI systems so you don't have to learn that lesson the hard way. Authorized red team research, workforce development, and security tooling from Puerto Rico.">
+<meta property="og:site_name" content="DIY Digital Dreams">
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DIY Digital Dreams — AI Security & Red Team Research">
+<meta name="twitter:description" content="Authorized red team research, workforce development, and AI security tooling from Puerto Rico.">
 <title>DIY Digital Dreams — AI Security & Red Team Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -30,7 +43,29 @@
     background: var(--ground);
     color: var(--text-light);
     overflow-x: hidden;
-    cursor: crosshair;
+  }
+
+  /* ── SKIP TO CONTENT ── */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--gold);
+    color: var(--ground);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    z-index: 200;
+    border-radius: 0 0 4px 4px;
+  }
+  .skip-link:focus { top: 0; }
+
+  /* ── FOCUS STYLES ── */
+  :focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
   }
 
   /* ── FIXED SKY CANVAS ── */
@@ -94,7 +129,51 @@
     transition: color 0.3s;
   }
 
-  .nav-links a:hover { color: var(--gold); }
+  .nav-links a:hover,
+  .nav-links a:focus-visible { color: var(--gold); }
+
+  /* ── MOBILE NAV ── */
+  .nav-toggle {
+    display: none;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.3s;
+  }
+  .nav-toggle:hover { border-color: var(--gold); }
+
+  @media (max-width: 700px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-toggle { display: block; }
+    .nav-links {
+      position: absolute;
+      top: 100%;
+      left: 0; right: 0;
+      flex-direction: column;
+      gap: 0;
+      background: rgba(16,8,8,0.95);
+      backdrop-filter: blur(12px);
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+    }
+    .nav-links.open {
+      max-height: 300px;
+      padding: 1rem 0;
+    }
+    .nav-links li { text-align: center; }
+    .nav-links a {
+      display: block;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.8rem;
+    }
+  }
 
   /* ── ALTITUDE INDICATOR ── */
   #altitude {
@@ -138,6 +217,10 @@
     background: var(--gold);
     border-color: var(--gold);
     box-shadow: 0 0 10px var(--gold);
+  }
+
+  @media (max-width: 700px) {
+    #altitude { display: none; }
   }
 
   /* ── HERO / GROUND ── */
@@ -533,12 +616,22 @@
     text-align: center;
     padding: 3rem;
     font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     letter-spacing: 0.2em;
-    color: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.3);
     border-top: 1px solid rgba(255,255,255,0.05);
     position: relative;
     z-index: 1;
+  }
+
+  /* ── ADDITIONAL MOBILE FIXES ── */
+  @media (max-width: 700px) {
+    section { padding: 4rem 1.25rem; }
+    .hero-content { padding: 0 0.5rem; }
+    .contact-link { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+    .contact-link-arrow { align-self: flex-end; }
+    .services-grid { gap: 1px; }
+    .tool-showcase, .about-layout { gap: 3rem; }
   }
 
   /* ── ANIMATIONS ── */
@@ -583,12 +676,16 @@
 <body>
 
 <!-- SKY CANVAS -->
-<canvas id="sky-canvas"></canvas>
+<canvas id="sky-canvas" aria-hidden="true"></canvas>
+
+<!-- SKIP TO CONTENT -->
+<a href="#hero" class="skip-link">Skip to content</a>
 
 <!-- NAV -->
-<nav>
+<nav aria-label="Main navigation">
   <div class="nav-logo">DIY Digital Dreams</div>
-  <ul class="nav-links">
+  <button class="nav-toggle" aria-expanded="false" aria-controls="nav-menu">Menu</button>
+  <ul class="nav-links" id="nav-menu" role="list">
     <li><a href="#services">Services</a></li>
     <li><a href="#bootcamp">Bootcamp</a></li>
     <li><a href="#tools">Tools</a></li>
@@ -598,14 +695,14 @@
 </nav>
 
 <!-- ALTITUDE INDICATOR -->
-<div id="altitude">
+<div id="altitude" aria-label="Page navigation">
   <div class="alt-dots">
-    <div class="alt-dot active" data-section="hero"></div>
-    <div class="alt-dot" data-section="services"></div>
-    <div class="alt-dot" data-section="bootcamp"></div>
-    <div class="alt-dot" data-section="tools"></div>
-    <div class="alt-dot" data-section="about"></div>
-    <div class="alt-dot" data-section="contact"></div>
+    <div class="alt-dot active" data-section="hero" role="button" tabindex="0" aria-label="Go to hero"></div>
+    <div class="alt-dot" data-section="services" role="button" tabindex="0" aria-label="Go to services"></div>
+    <div class="alt-dot" data-section="bootcamp" role="button" tabindex="0" aria-label="Go to bootcamp"></div>
+    <div class="alt-dot" data-section="tools" role="button" tabindex="0" aria-label="Go to tools"></div>
+    <div class="alt-dot" data-section="about" role="button" tabindex="0" aria-label="Go to about"></div>
+    <div class="alt-dot" data-section="contact" role="button" tabindex="0" aria-label="Go to contact"></div>
   </div>
   <div class="alt-label">Altitude</div>
 </div>
@@ -620,7 +717,7 @@
     </h1>
     <p class="hero-sub">We break AI systems so you don't have to learn that lesson the hard way. Authorized red team research, workforce development, and security tooling from Puerto Rico.</p>
     <div class="scroll-cue">
-      <span class="scroll-arrow">↑</span>
+      <span class="scroll-arrow">↓</span>
       <span>Scroll to ascend</span>
     </div>
   </div>
@@ -716,7 +813,7 @@
           <p>A Claude-powered payload analysis engine for AI security researchers. Submit your injection attempts and get systematic defense layer analysis, weakness identification, and improved variants.</p>
           <p>Built from competition intelligence. Deployed free for the research community.</p>
         </div>
-        <a href="https://promptomatic.netlify.app/" target="_blank" class="tool-link reveal reveal-delay-2">
+        <a href="https://promptomatic.netlify.app/" target="_blank" rel="noopener" class="tool-link reveal reveal-delay-2">
           Launch Tool →
         </a>
       </div>
@@ -806,14 +903,14 @@
       <p>Whether you need red team services, want to collaborate on research, or are interested in the bootcamp program — we're building something real here.</p>
     </div>
     <div class="contact-options reveal reveal-delay-2">
-      <a href="https://github.com/diydigitaldreams" target="_blank" class="contact-link">
+      <a href="https://github.com/diydigitaldreams" target="_blank" rel="noopener" class="contact-link">
         <div>
           <div class="contact-link-label">GitHub</div>
           <div class="contact-link-value">diydigitaldreams</div>
         </div>
         <span class="contact-link-arrow">→</span>
       </a>
-      <a href="https://promptomatic.netlify.app/" target="_blank" class="contact-link">
+      <a href="https://promptomatic.netlify.app/" target="_blank" rel="noopener" class="contact-link">
         <div>
           <div class="contact-link-label">Live Tool</div>
           <div class="contact-link-value">promptomatic.netlify.app</div>
@@ -846,7 +943,13 @@ function resize() {
   H = canvas.height = window.innerHeight;
 }
 resize();
-window.addEventListener('resize', resize);
+
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  resize();
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(initClouds, 200);
+});
 
 // Cloud layers
 const clouds = [];
@@ -874,7 +977,6 @@ function initClouds() {
   });
 }
 initClouds();
-window.addEventListener('resize', initClouds);
 
 function drawCloud(x, y, size, opacity, t) {
   // Tropical cumulus - tall, dramatic, heavily layered
@@ -1073,11 +1175,34 @@ const observer = new IntersectionObserver(entries => {
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// ── ALTITUDE DOT CLICK ──
+// ── ALTITUDE DOT CLICK + KEYBOARD ──
 document.querySelectorAll('.alt-dot').forEach(dot => {
   const id = dot.dataset.section;
   dot.addEventListener('click', () => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  });
+  dot.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+});
+
+// ── MOBILE NAV TOGGLE ──
+const navToggle = document.querySelector('.nav-toggle');
+const navMenu = document.getElementById('nav-menu');
+navToggle.addEventListener('click', () => {
+  const open = navMenu.classList.toggle('open');
+  navToggle.setAttribute('aria-expanded', open);
+  navToggle.textContent = open ? 'Close' : 'Menu';
+});
+// Close mobile nav on link click
+navMenu.querySelectorAll('a').forEach(link => {
+  link.addEventListener('click', () => {
+    navMenu.classList.remove('open');
+    navToggle.setAttribute('aria-expanded', 'false');
+    navToggle.textContent = 'Menu';
   });
 });
 </script>
